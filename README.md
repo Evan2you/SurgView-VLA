@@ -2,8 +2,6 @@
 
 **Task-Grounded View-to-Action Learning for Autonomous Laparoscopic Camera Control**
 
-[中文说明](README.zh-CN.md)
-
 This repository provides an initial, partial release of selected method components for SurgView-VLA, submitted to IPCAI 2027.
 
 > **Release status:** Core method preview. The complete codebase, training configurations, and reproduction instructions will be released as soon as possible.
