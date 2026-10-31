@@ -27,7 +27,7 @@ This preview provides selected feature-level implementations of **(B)-(D)**. The
 | **(C) View Predictor — optional scale-residual variant** | `ScaleResidualViewPredictor` | A frozen base View Predictor with a gated residual for the desired scale coordinate. This is a variant of (C), not an additional framework component. |
 | **(D) Camera Controller** | `CameraController` | A discrepancy-conditioned flow-matching action expert that generates 8-step camera action chunks using zero-initialized, 32-step Euler sampling; an MLP alternative is also available. |
 
-These are selected implementations extracted from the research code. Public class names follow the figure, and the original import names remain available as compatibility aliases. Packaging and explanatory comments have been adjusted; the model computations have not been changed. They do not constitute a complete release of every component described in the manuscript.
+These are selected implementations extracted from the research code. Public class names and module filenames follow the figure. Packaging and explanatory comments have been adjusted; the model computations have not been changed. They do not constitute a complete release of every component described in the manuscript.
 
 ## Feature and action interfaces
 
