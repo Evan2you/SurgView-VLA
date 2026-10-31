@@ -2,7 +2,7 @@
 
 import torch
 
-from surgview_vla import ActionHead, What2ViewV0, Where2ViewV1
+from surgview_vla import CameraController, RegionGrounder, ViewPredictor
 
 
 def main():
@@ -14,10 +14,10 @@ def main():
     depth_t = torch.rand(batch, 45, 80)
     state_t = torch.zeros(batch, 4)
 
-    grounder = What2ViewV0().eval()
-    view_head = Where2ViewV1().eval()
+    grounder = RegionGrounder().eval()
+    view_head = ViewPredictor().eval()
     # This minimal example omits temporal context and dataset normalization.
-    policy = ActionHead(input_dim=1024 + 4 + 4, kind="flow").eval()
+    policy = CameraController(input_dim=1024 + 4 + 4, kind="flow").eval()
     with torch.inference_mode():
         operative = grounder(h_t, v_t)
         views = view_head(h_t, operative["z_op"], depth_t)

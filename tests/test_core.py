@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import torch
 
-from surgview_vla import ActionHead, What2ViewV0, Where2ViewV1, Where2ViewV11
+from surgview_vla import CameraController, RegionGrounder, ViewPredictor, ScaleResidualViewPredictor
 
 
 class CoreContracts(unittest.TestCase):
@@ -17,7 +17,7 @@ class CoreContracts(unittest.TestCase):
         torch.manual_seed(19)
 
     def test_visibility_gated_pooling_of_constant_features(self):
-        model = What2ViewV0(hidden_dim=32).eval()
+        model = RegionGrounder(hidden_dim=32).eval()
         # Every visual position has the same feature; weighted pooling must
         # preserve it before the predicted visibility gate is applied.
         feature = torch.randn(2, 1024)
@@ -29,7 +29,7 @@ class CoreContracts(unittest.TestCase):
         self.assertTrue(((result["attention"] >= 0) & (result["attention"] <= 1)).all())
 
     def test_view_difference_after_shared_denormalization(self):
-        model = Where2ViewV1(
+        model = ViewPredictor(
             hidden_dim=32, view_mean=(0.2, 0.3, -1.0, 0.4),
             view_scale=(2.0, 3.0, 4.0, 5.0),
         ).eval()
@@ -40,8 +40,8 @@ class CoreContracts(unittest.TestCase):
         torch.testing.assert_close(result["g_cur"], result["g_cur_normalized"] * model.view_scale + model.view_mean)
 
     def test_optional_scale_residual_preserves_frozen_base(self):
-        base = Where2ViewV1(hidden_dim=32).eval()
-        model = Where2ViewV11(base, hidden_dim=32)
+        base = ViewPredictor(hidden_dim=32).eval()
+        model = ScaleResidualViewPredictor(base, hidden_dim=32)
         model.train()
         self.assertFalse(base.training)
         self.assertTrue(all(not p.requires_grad for p in base.parameters()))
@@ -55,7 +55,7 @@ class CoreContracts(unittest.TestCase):
         torch.testing.assert_close(result["e_view"], result["g_des"] - result["g_cur"])
 
     def test_flow_integrates_constant_velocity_from_zero(self):
-        model = ActionHead(12, kind="flow", hidden=32, layers=1).eval()
+        model = CameraController(12, kind="flow", hidden=32, layers=1).eval()
         condition = torch.randn(2, 12)
         states, times = [], []
 
@@ -72,7 +72,7 @@ class CoreContracts(unittest.TestCase):
         torch.testing.assert_close(times[0], torch.full((2,), 0.5 / 32))
 
     def test_flow_forward_and_repeatable_sampling(self):
-        model = ActionHead(12, kind="flow", hidden=32, layers=1).eval()
+        model = CameraController(12, kind="flow", hidden=32, layers=1).eval()
         condition = torch.randn(2, 12)
         velocity = model(condition, torch.randn(2, 8, 4), torch.rand(2))
         velocity.square().mean().backward()

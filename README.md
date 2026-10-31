@@ -10,39 +10,24 @@ This repository provides an initial, partial release of selected method componen
 
 SurgView-VLA studies task-conditioned camera control through three questions: **what to observe, how the current view should change, and what camera motion to generate**.
 
-The released modules expose this progression at the feature level:
+![SurgView-VLA architecture: perception backbone, Region Grounder, View Predictor, Camera Controller, temporal state memory, and safety layer](assets/figure03.png)
 
-```text
-Semantic features + spatial visual features
-                  │
-                  ▼
-       Task-conditioned attention ──► operative feature Z_op
-                                              │
-Semantic features + relative depth ────────────┤
-                                              ▼
-                              Current / desired view estimates
-                                              │
-                                   E_view = g_des − g_cur
-                                              │
-Z_op + E_view + camera state ──────────────────┤
-                                              ▼
-                              Conditioned flow action head
-                                              │
-                                   8 × 4 action chunk
-```
+[View the original architecture figure (PDF)](assets/figure03.pdf)
 
-This diagram describes the included feature-level example. Backbone feature extraction, temporal-memory integration, and robot execution are outside this release.
+The figure shows the overall framework: **(A) Surgical Multimodal Perception Backbone**, **(B) Region Grounder**, **(C) View Predictor**, **(D) Camera Controller**, and **(E) Safety Layer**, with **Temporal State Memory** supporting closed-loop interaction.
+
+This preview provides selected feature-level implementations of **(B)-(D)**. The perception backbone, temporal-memory integration, and RCM-constrained execution layer shown in the figure are outside the current release.
 
 ## Included components
 
-| Module | What is released |
-| --- | --- |
-| `What2ViewV0` | Semantic FiLM conditioning of visual features, attention and visibility prediction, visibility-gated attention pooling into `z_op`. |
-| `Where2ViewV1` | Independent current and desired view queries, four-dimensional view regression, shared de-normalization, and explicit `g_des - g_cur`. |
-| `Where2ViewV11` | An optional frozen-base variant with a gated residual for the desired scale coordinate. |
-| `ActionHead` | A conditioned Transformer flow head with zero-initialized, 32-step Euler sampling; an MLP head is also available. |
+| Component in the figure | Python class | What is released |
+| --- | --- | --- |
+| **(B) Region Grounder** | `RegionGrounder` | Task-conditioned operative attention via semantic FiLM modulation, attention and visibility prediction, and visibility-gated attention pooling into `z_op`. |
+| **(C) View Predictor** | `ViewPredictor` | Current and desired view query decoders, four-dimensional view regression, shared de-normalization, and a view comparator computing `g_des - g_cur`. |
+| **(C) View Predictor — optional scale-residual variant** | `ScaleResidualViewPredictor` | A frozen base View Predictor with a gated residual for the desired scale coordinate. This is a variant of (C), not an additional framework component. |
+| **(D) Camera Controller** | `CameraController` | A discrepancy-conditioned flow-matching action expert that generates 8-step camera action chunks using zero-initialized, 32-step Euler sampling; an MLP alternative is also available. |
 
-These are selected implementations extracted from the research code. Their versioned names are retained. Packaging and explanatory comments have been adjusted; the model computations have not been changed. They do not constitute a complete release of every component described in the manuscript.
+These are selected implementations extracted from the research code. Public class names follow the figure, and the original import names remain available as compatibility aliases. Packaging and explanatory comments have been adjusted; the model computations have not been changed. They do not constitute a complete release of every component described in the manuscript.
 
 ## Feature and action interfaces
 
@@ -60,13 +45,13 @@ The included view modules use the following default interfaces:
 
 The manuscript's geometric descriptor is `[c_x, c_y, log(sqrt(area)), d_rel]`. Both view predictions must be brought into the **same descriptor space** before subtraction. The released head provides shared `view_mean` and `view_scale` buffers; dataset statistics and label construction are not included.
 
-Future expert views provide supervision during training. The released `Where2ViewV1.forward(h_t, z_op, depth_t)` uses current features only: it predicts the desired view and subtracts the predicted current view. It does not require future frames or expert ROI annotations at inference.
+Future expert views provide supervision during training. The released `ViewPredictor.forward(h_t, z_op, depth_t)` uses current features only: it predicts the desired view and subtracts the predicted current view. It does not require future frames or expert ROI annotations at inference.
 
-`ActionHead` accepts a caller-supplied condition vector. The synthetic example concatenates `z_op`, `e_view`, and a four-dimensional camera state to illustrate the interface. This example does not supply the manuscript's complete temporal context, learned normalization, or perception pipeline.
+`CameraController` accepts a caller-supplied condition vector. The synthetic example concatenates `z_op`, `e_view`, and a four-dimensional camera state to illustrate the interface. This example does not supply the manuscript's complete temporal context, learned normalization, or perception pipeline.
 
 ## Run the synthetic example
 
-Use Python 3.10+ with PyTorch. The modules and checks were exercised on CPU with Python 3.10.12 and PyTorch 2.6.0.
+Use Python 3.10+ with PyTorch. The modules and checks were exercised on CPU with Python 3.12.14 and PyTorch 2.6.0.
 
 ```bash
 python -m venv .venv
